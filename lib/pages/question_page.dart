@@ -129,18 +129,12 @@ class _QuestionPageState extends State<QuestionPage> {
                                       fontWeight: FontWeight.bold,
                                       color: COLOR_GREEN)),
                               TextSpan(
-                                  text: '/${_questions.length}',
+                                  text: '/${10}',
                                   style: TextStyle(
                                       fontSize: 18,
                                       fontWeight: FontWeight.bold,
                                       color: COLOR_ORANGE))
                             ]))),
-                      ),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: <Widget>[
-                          _getPagingWidget(),
-                        ],
                       ),
                       Flexible(flex: 1, child: _populatePageView(_questions)),
                       SizedBox(
@@ -221,14 +215,12 @@ class _QuestionPageState extends State<QuestionPage> {
           QuestionResult.fromJson(json.decode(response.body));
 
       setState(() {
-        _questions.clear();
         _questions.addAll(result.body);
-        _currentPageView = 0;
-/*        Future.delayed(Duration.zero, () {
+        Future.delayed(Duration.zero, () {
           if (_pageController.hasClients) {
-            _pageController.jumpToPage(_currentPage);
+            _pageController.jumpToPage(_currentPageView);
           }
-        });*/
+        });
 
         Future.delayed(Duration(seconds: 3));
         _isLoading = false;
@@ -277,7 +269,7 @@ class _QuestionPageState extends State<QuestionPage> {
           return ListTile(
             dense: true,
             title: Text(
-              'Question ${index + 1 + ((_pageNumber - 1) * 10)}',
+              'Question ${index + 1}',
               style: TextStyle(
                   color: COLOR_DARK_TAN,
                   fontWeight: FontWeight.bold,
@@ -359,20 +351,10 @@ class _QuestionPageState extends State<QuestionPage> {
       textColor: Colors.blue,
       onPressed: () {
         setState(() {
-          _value = 1;
+          _value = 0;
           _pageNumber++;
 
-          if (currentPage == toggleSelections.length - 1) {
-            print('load new pages');
-            newPageInit = toggleItems[currentPage]+5233;
-            toggleSelections[currentPage] = false;
-            toggleSelections[0] = true;
 
-          } else {
-            toggleSelections[currentPage] = false;
-            currentPage++;
-            toggleSelections[currentPage] = true;
-          }
         });
         _fetchData(_pageNumber);
       },
@@ -384,104 +366,4 @@ class _QuestionPageState extends State<QuestionPage> {
     );
   }
 
-  List toggleItems = [1, 2, 3, 4, 5];
-  List<bool> toggleSelections = [true, false, false, false, false];
-
-  int currentPage = 0;
-
-  int newPageInit = 0;
-
-  Widget _getPagingWidget() {
-    return Container(
-      height: 40,
-      child: ToggleButtons(
-        borderWidth: 2,
-        textStyle: TextStyle(),
-        borderRadius: BorderRadius.circular(25),
-        selectedColor: Colors.white,
-        isSelected: toggleSelections,
-        fillColor: COLOR_GREEN,
-        disabledColor: COLOR_ORANGE,
-        children: <Widget>[
-          for (var index = 0; index < toggleSelections.length; index++)
-            Text('${toggleItems[index] + newPageInit}')
-        ],
-        onPressed: (int index) {
-          /* if (index == 0) {
-            //move previous
-            if (currentPage > 1) {
-              setState(() {
-                print('$currentPage');
-                toggleSelections[currentPage] = false;
-                currentPage--;
-                toggleSelections[currentPage] = true;
-                _pageNumber--;
-                _fetchData(_pageNumber);
-              });
-            } else {
-              print('load previous pages');
-            }
-          }
-
-          if (index == toggleItems.length - 1) {
-            //move next
-            if (currentPage < 5) {
-              setState(() {
-                toggleSelections[currentPage] = false;
-                currentPage++;
-                toggleSelections[currentPage] = true;
-
-                _value = 1;
-                _pageNumber++;
-                _fetchData(_pageNumber);
-              });
-            } else //load new pages {
-              print('load new pages');
-          }*/
-
-          //move to page
-          if (index != currentPage) {
-            setState(() {
-              currentPage = index + 1;
-              print('$currentPage');
-              for (var ind = 0; ind < toggleSelections.length; ind++) {
-                if (ind == index) {
-                  toggleSelections[ind] = true;
-                } else {
-                  toggleSelections[ind] = false;
-                }
-              }
-
-              currentPage = index;
-              _pageNumber = toggleItems[index]+newPageInit;
-              _fetchData(_pageNumber);
-              _value = 1;
-            });
-          }
-        },
-      ),
-    );
-  }
-
-  Widget _getPagingItemWidget(String value) {
-    return Card(
-      color: COLOR_GREEN,
-      elevation: 5,
-      child: GestureDetector(
-        onTap: () {
-          setState(() {
-            print('$value');
-          });
-        },
-        child: Container(
-            alignment: Alignment.center,
-            padding: EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-            child: Text(
-              value,
-              textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.white),
-            )),
-      ),
-    );
-  }
 }
