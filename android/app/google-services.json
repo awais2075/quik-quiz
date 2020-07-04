@@ -1,0 +1,40 @@
+{
+  "project_info": {
+    "project_number": "271914095606",
+    "firebase_url": "https://mobile-apps-2075.firebaseio.com",
+    "project_id": "mobile-apps-2075",
+    "storage_bucket": "mobile-apps-2075.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:271914095606:android:09cda9ea96b86a66942dd7",
+        "android_client_info": {
+          "package_name": "wesapps.com.quikquiz"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "271914095606-gm0jidrl2nd42mt93js869f9kfb025ls.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD-K6CYDRil2ed1YtIQ1E3_325cAdHZCP4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "271914095606-gm0jidrl2nd42mt93js869f9kfb025ls.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
