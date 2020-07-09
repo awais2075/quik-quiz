@@ -1,15 +1,12 @@
 import 'dart:convert';
-import 'dart:math';
 
-import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutterqaapp/models/category.dart';
 import 'package:flutterqaapp/models/category_result.dart';
-import 'package:flutterqaapp/models/website.dart';
 import 'package:flutterqaapp/utils/constants.dart';
 import 'package:http/http.dart' as http;
-import 'package:random_color/random_color.dart';
+import 'package:share/share.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -24,8 +21,6 @@ class _CategoryPageState extends State<CategoryPage> {
   int _counter = 0;
   bool _isLoading = false;
   List<Category> _categories = List<Category>();
-
-  RandomColor _randomColor = RandomColor();
 
   _fetchData() async {
     setState(() {
@@ -92,12 +87,22 @@ class _CategoryPageState extends State<CategoryPage> {
         appBar: AppBar(
           actions: <Widget>[
             IconButton(
+              icon: Icon(
+                Icons.share,
+                color: COLOR_GREEN,
+              ),
+              onPressed: () {
+                _shareWidget();
+              },
+            ),
+            IconButton(
+
                 onPressed: () {
                   showAboutDialog(
                       context: context,
                       applicationIcon: Container(
                         decoration: BoxDecoration(
-                          border: Border.all(color: COLOR_ORANGE,width: 2),
+                            border: Border.all(color: COLOR_ORANGE, width: 2),
                             borderRadius: BorderRadius.circular(16.0)),
                         child: Image.asset(
                           'assets/icons/icon_logo.png',
@@ -126,9 +131,9 @@ class _CategoryPageState extends State<CategoryPage> {
                             '4. Canva', 'https://www.canva.com/')
                       ]);
                 },
-                iconSize: 32,
                 tooltip: 'Info',
-                icon: Icon(Icons.info, color: COLOR_ORANGE))
+                icon: Icon(Icons.info_outline, color: COLOR_GREEN)),
+
           ],
           elevation: 0,
           backgroundColor: Colors.white.withOpacity(0),
@@ -233,44 +238,9 @@ class _CategoryPageState extends State<CategoryPage> {
     );
   }
 
-  Widget roundBoxWithSingleCharacter(String character, double w, double h) {
-    var value = 90 * pi / 360;
-    print('value $value');
-    return Stack(
-      alignment: Alignment.center,
-      children: <Widget>[
-        Transform.rotate(
-          angle: value,
-          child: Container(
-            width: w,
-            height: h,
-            child: Center(
-                /*    child: Text(
-              '$character',
-              style: TextStyle(
-                  fontSize: 20, color: Colors.white, fontWeight: FontWeight.bold),
-            )*/
-                ),
-            decoration: BoxDecoration(
-                color: _getRandomColor(), shape: BoxShape.rectangle),
-          ),
-        ),
-        Text(
-          '$character',
-          style: TextStyle(
-              fontSize: 20, color: Colors.white, fontWeight: FontWeight.bold),
-        )
-      ],
-    );
-  }
-
   void _moveToQuestionPage(Category category) {
     print(category.id);
     Navigator.pushNamed(context, '/question_page', arguments: category);
-  }
-
-  Color _getRandomColor() {
-    return _randomColor.randomColor(colorBrightness: ColorBrightness.veryDark);
   }
 
   _launchURL(String url) async {
@@ -294,5 +264,15 @@ class _CategoryPageState extends State<CategoryPage> {
         ),
       ),
     );
+  }
+
+  _shareWidget() {
+    final RenderBox box = context.findRenderObject();
+    Share.share(APP_LINK,
+        subject: APP_TITLE,
+        sharePositionOrigin:
+        box.localToGlobal(Offset.zero) &
+        box.size);
+
   }
 }

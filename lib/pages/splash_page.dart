@@ -1,6 +1,8 @@
 import 'package:connectivity/connectivity.dart';
 import 'package:flutter/material.dart';
+import 'package:flutterqaapp/models/app_info.dart';
 import 'package:flutterqaapp/utils/constants.dart';
+import 'package:package_info/package_info.dart';
 
 class SplashPage extends StatefulWidget {
   @override
@@ -13,8 +15,22 @@ class _SplashPageState extends State<SplashPage> {
 
   @override
   void initState() {
-    super.initState();
     checkNetworkStatus();
+    super.initState();
+
+  }
+
+
+  _getPackageInfo() async {
+    PackageInfo.fromPlatform().then((PackageInfo packageInfo) {
+      AppInfo appInfo = AppInfo();
+      appInfo.appName = packageInfo.appName;
+      appInfo.buildNumber = packageInfo.buildNumber;
+      appInfo.packageName = packageInfo.packageName;
+      appInfo.version = packageInfo.version;
+
+      print(packageInfo.packageName);
+    });
   }
 
   @override
