@@ -63,7 +63,20 @@ dependencies:
 
   url_launcher: ^5.5.0
 
+  # Screen-Util - []
+  # https://pub.dev/packages/flutter_screenutil
 
+  flutter_screenutil: ^2.1.0
+
+  # Toast - []
+  # https://pub.dev/packages/toast
+
+  toast: ^0.1.5
+
+  # AutoResize Text - []
+  # https://pub.dev/packages/auto_size_text
+
+  auto_size_text: ^2.1.0
 dev_dependencies:
   flutter_test:
     sdk: flutter

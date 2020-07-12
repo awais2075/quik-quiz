@@ -183,58 +183,69 @@ class _CategoryPageState extends State<CategoryPage> {
   }
 
   Widget _populateList() {
-    return Padding(
-      padding: const EdgeInsets.all(20.0),
-      child: GridView.builder(
-          shrinkWrap: true,
-          gridDelegate:
-              SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 2),
-          itemCount: _categories.length,
-          itemBuilder: (context, index) {
-            return Card(
-              semanticContainer: true,
-              elevation: 3,
-              child: InkWell(
-                onTap: () {
+    return Column(
+      children: <Widget>[
+        Flexible(
+          flex: 1,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20.0),
+            child: GridView.builder(
+              physics: BouncingScrollPhysics(),
+                shrinkWrap: true,
+                gridDelegate:
+                    SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 2),
+                itemCount: _categories.length,
+                itemBuilder: (context, index) {
+                  return Card(
+                    semanticContainer: true,
+                    elevation: 3,
+                    child: InkWell(
+                      onTap: () {
 //                  Crashlytics.instance.crash();
-                  _moveToQuestionPage(_categories[index]);
-                },
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  mainAxisSize: MainAxisSize.max,
-                  children: <Widget>[
-                    Padding(
-                        padding: const EdgeInsets.fromLTRB(20, 20, 0, 0),
-                        child: FadeInImage.assetNetwork(
-                          image: '${_categories[index].imageUrl}',
-                          placeholder: 'assets/gifs/gif_loading.gif',
-                          width: 64,
-                          height: 64,
-                        )),
-                    Padding(
-                      padding: const EdgeInsets.all(8.0),
-                      child: Container(
-                        decoration: BoxDecoration(
-                            color: COLOR_GREY,
-                            borderRadius: BorderRadius.all(Radius.circular(5))),
-                        child: ListTile(
-                          dense: true,
-                          title: Text(
-                            _categories[index].name,
-                            style: TextStyle(
-                                color: COLOR_ORANGE,
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold),
+                        _moveToQuestionPage(_categories[index]);
+                      },
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                        mainAxisSize: MainAxisSize.max,
+                        children: <Widget>[
+                          Padding(
+                              padding: const EdgeInsets.fromLTRB(20, 20, 0, 0),
+                              child: FadeInImage.assetNetwork(
+                                image: '${_categories[index].imageUrl}',
+                                placeholder: 'assets/gifs/gif_loading.gif',
+                                width: 64,
+                                height: 64,
+                              )),
+                          Padding(
+                            padding: const EdgeInsets.all(8.0),
+                            child: Container(
+                              decoration: BoxDecoration(
+                                  color: COLOR_GREY,
+                                  borderRadius: BorderRadius.all(Radius.circular(5))),
+                              child: ListTile(
+                                dense: true,
+                                title: Text(
+                                  _categories[index].name,
+                                  style: TextStyle(
+                                      color: COLOR_ORANGE,
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold),
+                                ),
+                              ),
+                            ),
                           ),
-                        ),
+                        ],
                       ),
                     ),
-                  ],
-                ),
-              ),
-            );
-          }),
+                  );
+                }),
+          ),
+        ),
+        Visibility(
+          visible: false,
+            child: Container(height: 60,color: COLOR_GREEN,))
+      ],
     );
   }
 
@@ -267,6 +278,7 @@ class _CategoryPageState extends State<CategoryPage> {
   }
 
   _shareWidget() {
+
     final RenderBox box = context.findRenderObject();
     Share.share(APP_LINK,
         subject: APP_TITLE,

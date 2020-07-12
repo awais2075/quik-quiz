@@ -1,16 +1,14 @@
 import 'dart:core';
-import 'dart:core';
-import 'dart:core';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutterqaapp/models/question.dart';
-import 'package:flutterqaapp/models/website.dart';
 
 //const String BASE_URL = 'http://192.168.10.5:3000';
-const String BASE_URL = 'https://nest-js-qa-app.herokuapp.com';
+const String BASE_URL = (kReleaseMode)?'https://qa-app-nest-js.uc.r.appspot.com':'https://nest-js-qa-app.herokuapp.com';
 //const String BASE_URL = 'https://qa-app-nest-js.uc.r.appspot.com';
 const String APP_TITLE = 'Quik Quiz';
 const String APP_VERSION = '1.0.2';
+
 const String APP_LINK = 'https://play.google.com/store/apps/details?id=wesapps.com.quikquiz';
 const Color COLOR_GREY = Color.fromRGBO(189, 195, 199, 0.2);
 const Color COLOR_GREEN = Color.fromRGBO(46, 154, 109, 1.0);

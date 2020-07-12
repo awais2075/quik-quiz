@@ -42,7 +42,7 @@ class _SplashPageState extends State<SplashPage> {
           crossAxisAlignment: CrossAxisAlignment.center,
           children: <Widget>[
             Center(
-              child: Image.asset('assets/icons/icon_logo.png'),
+              child: Image.asset('assets/icons/icon_logo.png',width: 256,height: 256,),
             ),
             SizedBox(
               height: 5,
