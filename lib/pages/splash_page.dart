@@ -1,5 +1,7 @@
 import 'package:connectivity/connectivity.dart';
 import 'package:flutter/material.dart';
+import 'package:flutterqaapp/bloc/splash_page_bloc.dart';
+import 'package:flutterqaapp/enums/status.dart';
 import 'package:flutterqaapp/models/app_info.dart';
 import 'package:flutterqaapp/utils/constants.dart';
 import 'package:package_info/package_info.dart';
@@ -13,13 +15,13 @@ class _SplashPageState extends State<SplashPage> {
   bool _isNetworkAvailable = false;
   bool _isLoading = true;
 
+  final _bloc = SplashPageBloc();
+
   @override
   void initState() {
-    checkNetworkStatus();
+    _bloc.tryAgainWidgetSink.add(null);
     super.initState();
-
   }
-
 
   _getPackageInfo() async {
     PackageInfo.fromPlatform().then((PackageInfo packageInfo) {
@@ -42,7 +44,11 @@ class _SplashPageState extends State<SplashPage> {
           crossAxisAlignment: CrossAxisAlignment.center,
           children: <Widget>[
             Center(
-              child: Image.asset('assets/icons/icon_logo.png',width: 256,height: 256,),
+              child: Image.asset(
+                'assets/icons/icon_logo.png',
+                width: 256,
+                height: 256,
+              ),
             ),
             SizedBox(
               height: 5,
@@ -57,58 +63,56 @@ class _SplashPageState extends State<SplashPage> {
               ),
             ),
             SizedBox(height: 10),
-            (_isLoading)
-                ? CircularProgressIndicator(
-                    valueColor: AlwaysStoppedAnimation<Color>(COLOR_ORANGE),
-                    backgroundColor: Colors.white,
-                  )
-                : (!_isNetworkAvailable)
-                    ? RaisedButton(
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(18.0),
-                            side: BorderSide(color: COLOR_ORANGE)),
-                        color: Colors.white,
-                        onPressed: () {
-                          checkNetworkStatus();
-                        },
-                        child: Text(
-                          'Try Again',
-                          style: TextStyle(
-                              color: COLOR_ORANGE, fontWeight: FontWeight.bold),
-                        ),
-                      )
-                    : Text(
-                        'Loading Data',
-                        style: TextStyle(color: COLOR_ORANGE),
-                      ),
+            StreamBuilder(
+                stream: _bloc.networkStatusWidgetStream,
+                builder:
+                    (BuildContext context, AsyncSnapshot<STATUS> snapshot) {
+                  switch (snapshot.data) {
+                    case STATUS.LOADING:
+                      return CircularProgressIndicator(
+                        valueColor: AlwaysStoppedAnimation<Color>(COLOR_ORANGE),
+                        backgroundColor: Colors.white,
+                      );
+                      break;
+                    case STATUS.FAIL:
+                      return _tryAgainWidget();
+                      break;
+                    case STATUS.SUCCESS:
+                      Future.delayed(Duration.zero,() {moveToNextPage();});
+                      return Text('Loading Data');
+                      break;
+                    default:
+                      return SizedBox.shrink();
+                  }
+                }),
           ],
         ));
   }
 
-  void checkNetworkStatus() async {
-    setState(() {
-      _isLoading = true;
-    });
-    await Future.delayed(Duration(seconds: 3));
-
-    var connectivityResult = await Connectivity().checkConnectivity();
-    if (connectivityResult == ConnectivityResult.mobile ||
-        connectivityResult == ConnectivityResult.wifi) {
-      setState(() {
-        _isNetworkAvailable = true;
-        _isLoading = false;
-        moveToNextPage();
-      });
-    } else {
-      print('network not available');
-      setState(() {
-        _isNetworkAvailable = false;
-        _isLoading = false;
-      });
-    }
-  }
 
   void moveToNextPage() {
     Navigator.pushReplacementNamed(context, '/category_page');
+  }
+
+  @override
+  void dispose() {
+    _bloc.dispose();
+    super.dispose();
+  }
+
+  Widget _tryAgainWidget() {
+    return RaisedButton(
+      shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(18.0),
+          side: BorderSide(color: COLOR_ORANGE)),
+      color: Colors.white,
+      onPressed: () {
+        _bloc.tryAgainWidgetSink.add(null);
+      },
+      child: Text(
+        'Try Again',
+        style: TextStyle(color: COLOR_ORANGE, fontWeight: FontWeight.bold),
+      ),
+    );
   }
 }
