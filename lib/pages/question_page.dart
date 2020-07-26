@@ -4,6 +4,10 @@ import 'dart:core';
 import 'package:auto_size_text/auto_size_text.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:flutterqaapp/bloc/question_page_bloc.dart';
+import 'package:flutterqaapp/enums/status.dart';
+import 'package:flutterqaapp/models/progress.dart';
+import 'package:flutterqaapp/models/ques_map.dart';
 import 'package:flutterqaapp/models/question_map.dart';
 import 'package:flutterqaapp/models/category.dart';
 import 'package:flutterqaapp/models/option.dart';
@@ -29,18 +33,12 @@ class _QuestionPageState extends State<QuestionPage>
   final Category _category;
   List<Question> _currentPageQuestions = new List<Question>();
 
-  Question _question;
 
-//  Map<int, List<Question>> _questions;
-//  Map<int, List<Question>> _questions = Map<int, List<Question>>();
-  bool _isLoading = false;
   bool _isReporting = false;
   int _pageView = 0;
 
   int _pageNumber = 1;
 
-  int _questionLimit = 0;
-  int _questionNumber = 0;
   int _totalPages = 0;
 
   double itemSize = 50;
@@ -57,11 +55,14 @@ class _QuestionPageState extends State<QuestionPage>
 
   double _value = 1.0;
 
+  QuestionPageBloc _bloc;
+
   @override
   void initState() {
-//    _fetchData(_pageNumber);
+    _bloc = QuestionPageBloc(_category);
+    _bloc.nextPageWidgetSink.add(_category.id);
 
-    _getData();
+//    _fetchData(1);
     _initScrollController();
 
     _initItemScrollController();
@@ -87,6 +88,7 @@ class _QuestionPageState extends State<QuestionPage>
 
   @override
   void dispose() {
+    _bloc.dispose();
     _pageController.dispose();
     _animationController.dispose();
     super.dispose();
@@ -98,80 +100,105 @@ class _QuestionPageState extends State<QuestionPage>
     return IgnorePointer(
       ignoring: _isReporting,
       child: Scaffold(
-        key: _scaffoldKey,
-        backgroundColor: COLOR_PALE_ORANGE,
-        appBar: AppBar(
-            elevation: 0,
-            backgroundColor: Colors.white.withOpacity(0),
-            title: Text(
-              _category.name,
-              style: TextStyle(
+          key: _scaffoldKey,
+          backgroundColor: COLOR_PALE_ORANGE,
+          appBar: AppBar(
+              elevation: 0,
+              backgroundColor: Colors.white.withOpacity(0),
+              title: Text(
+                _category.name,
+                style: TextStyle(
+                    color: COLOR_DARK_TAN,
+                    fontSize: ScreenUtil().setSp(48),
+                    fontWeight: FontWeight.bold),
+              ),
+              centerTitle: true,
+              actions: <Widget>[
+                IconButton(
+                  icon: Icon(
+                    Icons.verified_user,
+                    color: COLOR_GREEN,
+                  ),
+                  onPressed: () {
+                    _showToast(context, 'Current Page', gravity: Toast.BOTTOM);
+                  },
+                ),
+                IconButton(
+                  icon: Icon(
+                    Icons.verified_user,
+                    color: COLOR_ORANGE,
+                  ),
+                  onPressed: () {
+                    _showToast(context, 'Visited Pages', gravity: Toast.BOTTOM);
+                  },
+                ),
+              ],
+              leading: IconButton(
+                tooltip: 'Back',
+                onPressed: () {
+                  Navigator.of(context).pop();
+                },
+                icon: Icon(
+                  Icons.arrow_back_ios,
                   color: COLOR_DARK_TAN,
-                  fontSize: ScreenUtil().setSp(48),
-                  fontWeight: FontWeight.bold),
-            ),
-            centerTitle: true,
-            actions: <Widget>[
-              IconButton(
-                icon: Icon(
-                  Icons.verified_user,
-                  color: COLOR_GREEN,
+                  size: 14,
                 ),
-                onPressed: () {
-                  _showToast(context, 'Current Page', gravity: Toast.BOTTOM);
-                },
-              ),
-              IconButton(
-                icon: Icon(
-                  Icons.verified_user,
-                  color: COLOR_ORANGE,
-                ),
-                onPressed: () {
-                  _showToast(context, 'Visited Pages', gravity: Toast.BOTTOM);
-                },
-              ),
-            ],
-            leading: IconButton(
-              tooltip: 'Back',
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-              icon: Icon(
-                Icons.arrow_back_ios,
-                color: COLOR_DARK_TAN,
-                size: 14,
-              ),
-            )),
-        floatingActionButton: (_isLoading)
-            ? _emptyWidget()
-            : Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: <Widget>[
-                  Padding(
-                      padding: EdgeInsets.only(left: ScreenUtil().setWidth(80)),
-                      child: (_pageView > 0)
-                          ? _previousQuestionWidget()
-                          : (_pageNumber > 1)
-                              ? _previousPageWidget()
-                              : _emptyWidget()),
-                  Spacer(),
-                  (_pageView < _questionLimit - 1)
-                      ? _nextQuestionWidget()
-                      : (_pageNumber < _totalPages)
-                          ? _nextPageWidget()
-                          : _emptyWidget()
-                ],
-              ),
-        body: (_isLoading)
-            ? _progressWidget()
-            : (_currentPageQuestions.isNotEmpty)
-                ? _questionBodyWidget()
-                : _reloadWidget(),
-      ),
+              )),
+          floatingActionButton: StreamBuilder(
+              stream: _bloc.progressWidgetStream,
+              builder:
+                  (BuildContext context, AsyncSnapshot<Progress> snapshot) {
+                debugPrint('${snapshot.connectionState}');
+                switch (snapshot.connectionState) {
+                  case ConnectionState.active:
+                    return Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceAround,
+                      children: <Widget>[
+                        Padding(
+                            padding: EdgeInsets.only(
+                                left: ScreenUtil().setWidth(80)),
+                            child: (snapshot.data.currentQuestion == 1 &&
+                                    snapshot.data.currentPage > 1)
+                                ? _previousPageWidget()
+                                : (snapshot.data.currentQuestion > 1)
+                                    ? _previousQuestionWidget()
+                                    : _emptyWidget()),
+                        Spacer(),
+                        (snapshot.data.currentQuestion ==
+                                    snapshot.data.totalQuestions &&
+                                snapshot.data.currentPage <
+                                    snapshot.data.totalPages)
+                            ? _nextPageWidget()
+                            : (snapshot.data.currentQuestion <
+                                    snapshot.data.totalQuestions)
+                                ? _nextQuestionWidget()
+                                : _emptyWidget(),
+                      ],
+                    );
+                  default:
+                    return _emptyWidget();
+                }
+              }),
+          body: StreamBuilder(
+              stream: _bloc.questionWidgetStream,
+              builder: (BuildContext context, AsyncSnapshot<QuesMap> snapshot) {
+                debugPrint('questionWidget ${snapshot.connectionState}');
+                switch ((snapshot.data)?.status) {
+                  case STATUS.LOADING:
+                    return _loadingWidget();
+                  case STATUS.SUCCESS:
+                    return _questionBodyWidget(
+                        snapshot.data.questions, snapshot.data.pageNumber);
+                  case STATUS.FAIL:
+                    return _tryAgainWidget();
+                  default:
+                    return _emptyWidget();
+                }
+              })),
     );
   }
 
-  Widget _progressWidget({bool isCircular = false}) {
+  Widget _loadingWidget({bool isCircular = false}) {
     return (isCircular)
         ? CircularProgressIndicator(
             valueColor: AlwaysStoppedAnimation<Color>(COLOR_GREEN),
@@ -183,7 +210,7 @@ class _QuestionPageState extends State<QuestionPage>
           );
   }
 
-  Widget _reloadWidget() {
+  Widget _tryAgainWidget() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.center,
       mainAxisAlignment: MainAxisAlignment.center,
@@ -199,7 +226,7 @@ class _QuestionPageState extends State<QuestionPage>
             color: COLOR_GREEN,
             child: Text('Try Again'),
             onPressed: () {
-              _fetchData(_pageNumber);
+              _bloc.nextPageWidgetSink.add(_category.id);
             },
           ),
         ),
@@ -207,55 +234,94 @@ class _QuestionPageState extends State<QuestionPage>
     );
   }
 
-  Widget _questionBodyWidget() {
+  Widget _questionBodyWidget(List<Question> questions, int pageNumber) {
     return Column(
       mainAxisAlignment: MainAxisAlignment.start,
       crossAxisAlignment: CrossAxisAlignment.end,
       children: <Widget>[
-        _pageProgressWidget(),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: <Widget>[
-            Padding(
-              padding: EdgeInsets.all(ScreenUtil().setWidth(20)),
-              child: Align(
-                  alignment: Alignment.topLeft,
-                  child: RichText(
-                      text: TextSpan(children: [
-                    TextSpan(
-                        text: '${_pageView + 1}',
-                        style: TextStyle(
-                            fontSize: 22,
-                            fontWeight: FontWeight.bold,
-                            color: COLOR_GREEN)),
-                    TextSpan(
-                        text: '/$_questionLimit',
-                        style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
-                            color: COLOR_ORANGE))
-                  ]))),
-            ),
-            (!_isLoading) ? _reportQuestionWidget(_question) : _emptyWidget()
-          ],
+        Flexible(
+          flex: 2,
+          child: StreamBuilder(
+              stream: _bloc.progressWidgetStream,
+              builder:
+                  (BuildContext context, AsyncSnapshot<Progress> snapshot) {
+                if(snapshot.hasData) {
+                  return _progressAndPagingWidget(snapshot.data);
+                }else {
+                  return _emptyWidget();
+                }
+                switch (snapshot.connectionState) {
+                  case ConnectionState.active:
+                    return _progressAndPagingWidget(snapshot.data);
+                  default:
+                    return _emptyWidget();
+                }
+              }),
         ),
-        _pagingWidget(),
-        Flexible(flex: 1, child: _questionWidget(_currentPageQuestions)),
+        Flexible(flex: 12, child: _questionWidget(questions, pageNumber)),
       ],
     );
   }
 
-  Widget _pageProgressWidget() {
+  Widget _progressAndPagingWidget(Progress progress) {
+    return Column(
+      children: <Widget>[
+        _progressWidget(progress),
+        _pagingWidget(progress)
+      ],
+    );
+  }
+
+  Widget _progressWidget(Progress progress) {
+    debugPrint('progress : ${progress.totalQuestions}');
+    return Column(
+      children: <Widget>[
+        _numericalProgressWidget(progress),
+        _graphicalProgressWidget(progress),
+      ],
+    );
+  }
+
+  Widget _numericalProgressWidget(Progress progress) {
     return LinearProgressIndicator(
       valueColor: AlwaysStoppedAnimation<Color>(COLOR_GREEN),
       backgroundColor: COLOR_LIGHT_ORANGE,
-      value: (_value / _questionLimit),
-      semanticsLabel: _value.toString(),
+      value: (progress.currentQuestion / progress.totalQuestions),
+//      semanticsLabel: _value.toString(),
+    );
+  }
+
+  Widget _graphicalProgressWidget(Progress progress) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: <Widget>[
+        Padding(
+          padding: EdgeInsets.all(ScreenUtil().setWidth(20)),
+          child: Align(
+              alignment: Alignment.topLeft,
+              child: RichText(
+                  text: TextSpan(children: [
+                TextSpan(
+                    text: '${progress.currentQuestion}',
+                    style: TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                        color: COLOR_GREEN)),
+                TextSpan(
+                    text: '/${progress.totalQuestions}',
+                    style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: COLOR_ORANGE))
+              ]))),
+        ),
+      ],
     );
   }
 
   Widget _reportQuestionWidget(Question question) {
-    String questionText = (question.isReported) ? 'Question Reported' : 'Report Question';
+    String questionText =
+        (question?.isReported) ? 'Question Reported' : 'Report Question';
     Color color = (question.isReported) ? COLOR_ORANGE : COLOR_DARK_TAN;
     return FlatButton.icon(
         icon: Icon(
@@ -270,82 +336,7 @@ class _QuestionPageState extends State<QuestionPage>
             (question.isReported) ? null : () => _reportQuestion(question));
   }
 
-  _getData() async {
-    if (QuestionMap().map[_category.id] != null &&
-        QuestionMap().categoryMap[_category.id] != null) {
-      setState(() {
-        _totalPages = QuestionMap().categoryMap[_category.id];
-      });
-      _loadPage(1, isFirst: true);
-    } else {
-      QuestionMap().map[_category.id] = Map();
-      _fetchData(_pageNumber);
-    }
-  }
 
-  _fetchData(int pageNum) async {
-    setState(() {
-      _isLoading = true;
-    });
-    var request = '$BASE_URL/questions/c_id/${_category.id}/?page_no=$pageNum';
-//    print(request);
-
-    await http.get(request).timeout(Duration(seconds: 10)).then((response) {
-      QuestionResult result =
-          QuestionResult.fromJson(json.decode(response.body));
-
-      setState(() {
-        //start from beginning
-
-        _pageNumber = pageNum;
-        _pageView = 0;
-        _value = 1.0;
-        _questionNumber = (_pageNumber - 1) * TOTAL_QUESTIONS_PER_PAGE + 1;
-
-        //_questions[pageNum] = result.body;
-
-        (QuestionMap().map[_category.id])[pageNum] = result.body;
-        _currentPageQuestions =
-            List.from((QuestionMap().map[_category.id])[pageNum]);
-
-        //load current question
-        _question = _currentPageQuestions[_pageView];
-
-        _questionLimit = _currentPageQuestions.length;
-
-        _totalPages = (result.count / TOTAL_QUESTIONS_PER_PAGE).ceil();
-        QuestionMap().categoryMap[_category.id] = _totalPages;
-
-        _pageNumber = pageNum;
-
-        _isLoading = false;
-
-        Future.delayed(Duration(seconds: 1), () {
-//          _pageController.jumpToPage(_pageView);
-          _itemScrollController.jumpTo(index: _pageNumber - 1);
-//          _itemScrollController.scrollTo(index: _pageNumber - 1, duration: Duration(seconds: 2));
-        });
-      });
-    }).catchError((error) {
-//      print(error.message);
-      setState(() {
-        if (_currentPageQuestions.isEmpty) {
-          _isLoading = false;
-          _pageView = 0;
-          _currentPageQuestions.clear();
-        } else {
-          _isLoading = false;
-          Future.delayed(Duration(seconds: 1), () {
-            _pageController.jumpToPage(_pageView);
-
-            _showToast(context, 'Failed to Load Data', gravity: Toast.BOTTOM);
-
-//            _scaffoldKey.currentState.showSnackBar(_snackBarWidget('Failed to Load Data'));
-          });
-        }
-      });
-    });
-  }
 
   _reportQuestion(Question question) async {
     question.isReported = true;
@@ -393,7 +384,7 @@ class _QuestionPageState extends State<QuestionPage>
         });
   }
 
-  Widget _questionWidget(List<Question> questions) {
+  Widget _questionWidget(List<Question> questions, int pageNumber) {
     return Padding(
       padding: EdgeInsets.symmetric(
           horizontal: ScreenUtil().setWidth(60),
@@ -411,7 +402,7 @@ class _QuestionPageState extends State<QuestionPage>
                 ListTile(
                   dense: true,
                   title: Text(
-                    'Question $_questionNumber',
+                    'Question ${(pageNumber - 1) * 10 + (index + 1)}',
                     style: TextStyle(
                         color: COLOR_DARK_TAN,
                         fontWeight: FontWeight.bold,
@@ -458,7 +449,7 @@ class _QuestionPageState extends State<QuestionPage>
                       horizontal: ScreenUtil().setWidth(60),
                       vertical: ScreenUtil().setWidth(10)),
                   child: (_isReporting)
-                      ? Center(child: _progressWidget(isCircular: true))
+                      ? Center(child: _loadingWidget(isCircular: true))
                       : _emptyWidget(),
                 )
               ],
@@ -470,8 +461,10 @@ class _QuestionPageState extends State<QuestionPage>
   Widget _previousQuestionWidget() {
     return FlatButton(
       textColor: Colors.blue,
-      onPressed:
-          (_questionNumber % 10 >= 0) ? () => _loadPreviousQuestion() : null,
+      onPressed: () {
+        _loadPreviousQuestion();
+        _bloc.previousQuestionWidgetSink.add(null);
+      },
       child: Text(
         'Previous',
         style: TextStyle(
@@ -484,20 +477,15 @@ class _QuestionPageState extends State<QuestionPage>
     if (_pageController.hasClients) {
       _pageController.previousPage(duration: _kDuration, curve: _kCurve);
     }
-    setState(() {
-      _pageView--;
-      _questionNumber--;
-      _value--;
-
-      //load current question
-      _question = _currentPageQuestions[_pageView];
-    });
   }
 
   Widget _nextQuestionWidget() {
     return FlatButton(
       textColor: Colors.blue,
-      onPressed: () => _loadNextQuestion(),
+      onPressed: () {
+        _loadNextQuestion();
+        _bloc.nextQuestionWidgetSink.add(null);
+      },
       child: Text(
         'Next',
         style: TextStyle(
@@ -510,20 +498,12 @@ class _QuestionPageState extends State<QuestionPage>
     if (_pageController.hasClients) {
       _pageController.nextPage(duration: _kDuration, curve: _kCurve);
     }
-    setState(() {
-      _value++;
-      _questionNumber++;
-      _pageView++;
-
-      //load current question
-      _question = _currentPageQuestions[_pageView];
-    });
   }
 
   Widget _nextPageWidget() {
     return FlatButton(
       textColor: Colors.blue,
-      onPressed: () => _loadNextPage(),
+      onPressed: () => _bloc.nextPageWidgetSink.add(_category.id),
       child: Text(
         'Next Page',
         style: TextStyle(
@@ -535,10 +515,7 @@ class _QuestionPageState extends State<QuestionPage>
   Widget _previousPageWidget() {
     return FlatButton(
       textColor: Colors.blue,
-      onPressed: () {
-        int pageNum = _pageNumber;
-        _loadPage(--pageNum);
-      },
+      onPressed: () => _bloc.previousPageWidgetSink.add(_category.id),
       child: Text(
         'Previous Page',
         style: TextStyle(
@@ -547,69 +524,24 @@ class _QuestionPageState extends State<QuestionPage>
     );
   }
 
-  _loadNextPage() {
-    int pageNum = _pageNumber;
-    _loadPage(++pageNum);
-  }
 
-  _loadPrevPage() {
-    int pageNum = _pageNumber;
 
-    _loadPage(--pageNum);
-  }
 
-  _loadPage(int pageNum, {bool isFirst = false}) {
-    setState(() {
-      if (QuestionMap().map[_category.id][pageNum] != null) {
-        /*}
-      if (_questions[pageNum] != null) {
-        _currentPageQuestions = List.from(_questions[pageNum]);*/
-
-        _currentPageQuestions =
-            List.from(QuestionMap().map[_category.id][pageNum]);
-        _questionLimit = _currentPageQuestions.length;
-        _value = 1;
-
-        _pageView = 0;
-
-        _pageNumber = pageNum;
-        _questionNumber = (_pageNumber - 1) * TOTAL_QUESTIONS_PER_PAGE + 1;
-
-        //load current question
-        _question = _currentPageQuestions[_pageView];
-
-        if (!isFirst) {
-          Future.delayed(Duration(seconds: 1), () {
-            _pageController.jumpToPage(_pageView);
-//            _itemScrollController.jumpTo(index: _pageNumber - 1);
-
-            _itemScrollController.scrollTo(
-                index: _pageNumber - 1, duration: Duration(seconds: 1));
-          });
-        }
-      } else {
-        _fetchData(pageNum);
-      }
-    });
-  }
-
-  Widget _pagingWidget() {
+  Widget _pagingWidget(Progress progress) {
     return Container(
       height: ScreenUtil().setHeight(100),
       child: ScrollablePositionedList.builder(
         scrollDirection: Axis.horizontal,
         itemScrollController: _itemScrollController,
-        itemCount: _totalPages,
+        itemCount: progress.totalPages,
         itemBuilder: (context, index) {
           return GestureDetector(
             onTap: () =>
-                (index + 1 == _pageNumber) ? null : _loadPage(index + 1),
+                (index + 1 == progress.currentPage) ? null : _bloc.specificPageSink.add(index+1),
             child: Card(
-              color: (index + 1 == _pageNumber)
+              color: (index + 1 == progress.currentPage)
                   ? COLOR_GREEN
-                  : (QuestionMap().map[_category.id].containsKey(index + 1)
-                      ? COLOR_ORANGE
-                      : null),
+                  : null,
               child: Padding(
                 padding:
                     EdgeInsets.symmetric(horizontal: ScreenUtil().setWidth(40)),
@@ -617,12 +549,8 @@ class _QuestionPageState extends State<QuestionPage>
                     child: Text(
                   '${index + 1}',
                   style: TextStyle(
-                      color: (index + 1 == _pageNumber ||
-                              QuestionMap()
-                                  .map[_category.id]
-                                  .containsKey(index + 1))
-                          ? Colors.white
-                          : null),
+                      color: (index+1 == progress.currentPage)?Colors.white:null
+                     ),
                 )),
               ),
             ),
